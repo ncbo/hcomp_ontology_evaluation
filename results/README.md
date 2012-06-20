@@ -1,6 +1,6 @@
 ## Results Data
 
-- Data summary.xslx: the summary of all the results from all experiments.
+- <code>Data summary.xslx</code> the summary of all the results from all experiments.
 
 - <code>categorization.data.xlsx</code> the results for each question, including the student responses from Evermann and Fang.
 
