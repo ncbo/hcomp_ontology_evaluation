@@ -4,7 +4,7 @@
 
 - <code>categorization.data.xlsx</code> the results for each question, including the student responses from Evermann and Fang.
 
-- <code>correlations.xslx</code> linear regression analysis for students and workers correlation.
+- <code>t-test.xslx</code> 'Student's' t-test analysis for determining statistical significance differences between worker and student responses.
 
 In the individual folders are the full details for the results for each ontology:
 
