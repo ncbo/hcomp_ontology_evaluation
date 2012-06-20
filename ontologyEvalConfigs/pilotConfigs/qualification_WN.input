@@ -1,0 +1,13 @@
+id	ontology	value	child	parent	score
+qual1	WN	true	Herbivore	Animal	1
+qual2	WN	true	Commuter Train	Train	1
+qual3	WN	true	Train	Public Transport	1
+qual4	WN	false	Passenger Train	Animal	1
+qual5	WN	false	Person	Fish	1
+qual6	WN	false	Device	Newspaper	1
+qual7	WN	true	Newspaper	Print Media	1
+qual8	WN	true	Apple	Edible Fruit	1
+qual9	WN	true	Child	Person	1
+qual10	WN	false	Map	Animal	1
+qual11	WN	false	Skiing	Swimming	1
+qual12	WN	false	Sport 	Citation	1

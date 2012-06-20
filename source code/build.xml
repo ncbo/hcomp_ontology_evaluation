@@ -1,0 +1,376 @@
+<?xml version="1.0"?>
+<project name="OntologyEval" default="help" basedir=".">
+
+  <property file="build.properties" />
+<!--  
+  <property name="release.name" value="${sdk.name}-${major.version}.${minor.version}"/>
+-->
+
+	   <echo message="sdk.home = ${sdk.home}" />
+	
+  <property name="package.service.name" value="com.amazonaws.mturk.requester"/>
+  <property name="package.dataschema.name" value="com.amazonaws.mturk.dataschema"/>
+  <property name="output.dir" location="build"/>
+  <property name="lib.dir" location="${sdk.home}/lib"/>
+  <property name="etc.dir" value="${sdk.home}/etc"/>
+	
+   <echo message="lib.dir = ${lib.dir}" />
+
+  <property name="dist.dir" location="dist"/>
+  <property name="temp.dir" location="${dist.dir}/temp"/>
+
+	  <property name="eval.src.dir" value="src"/>
+	  <property name="eval.classes.dir" location="${output.dir}/private/classes/${eval.src.dir}"/>
+
+	
+  <property name="stub.jar" value="${lib.dir}/${requester.service.name}.jar"/>
+  <property name="dataschema.jar" value="${lib.dir}/${requester.dataschema.name}.jar"/>
+  <property name="sdk.jar" value="${lib.dir}/${sdk.name}.jar"/>
+
+  <property name="wsdl.location" value="etc/wsdl/${wsdl.date}/AWSMechanicalTurkRequester.wsdl"/>
+
+  <property name="dataschema.location" value="${etc.dir}/schema/${dataschema.version}/QuestionFormAnswers.xsd"/>
+
+  <property name="third-party.lib.dir" value="${lib.dir}/third-party"/>
+  
+  <path id="build.deps.classpath">
+    <!-- Make sure Xerces comes before jaxme. -->
+    <fileset dir="${third-party.lib.dir}" includes="xerces*/*.jar"/>
+    <fileset dir="${third-party.lib.dir}" includes="**/*.jar" excludes="xerces*/*.jar"/>
+  </path>
+
+  <path id="build.classpath">
+    <path refid="build.deps.classpath"/>
+    <path location="${dataschema.jar}"/>
+    <path location="${stub.jar}"/>
+  </path>
+
+  <path id="build.test.classpath">
+    <path refid="build.classpath"/>
+    <pathelement location="${sdk.jar}"/>
+  </path>
+
+  <path id="dist.classpath">
+    <fileset dir="${lib.dir}">
+      <include name="${requester.service.name}.jar"/>
+      <include name="${requester.dataschema.name}.jar"/>
+      <include name="${sdk.name}.jar"/>
+    </fileset>
+  </path>
+
+
+  <path id="build.eval.classpath">
+    <path refid="build.classpath"/>
+    <pathelement location="${sdk.jar}"/>
+    <path refid="dist.classpath"/>
+  </path>
+
+  <path id="runtime.classpath">
+    <path refid="build.classpath"/>
+    <path location="${sdk.jar}"/>
+    <path refid="dist.classpath"/>
+    <path path="${eval.classes.dir}" />
+  </path>
+
+
+  <target name="check-dataschema-jar">
+    <uptodate property="dataschema-uptodate" srcfile="${dataschema.location}" targetfile="${dataschema.jar}"/>
+  </target>
+
+  <target name="dataschema-jar"
+          description="Build Jar containing the jaxme generated classes"
+          depends="check-dataschema-jar"
+          unless="dataschema-uptodate">
+
+    <mkdir dir="${dataschema.src.dir}"/>
+    <mkdir dir="${dataschema.classes.dir}"/>
+
+    <echo message="generating dataschema sources" />
+    <xjc target="${dataschema.src.dir}"
+         package="${package.dataschema.name}"
+         schema="${dataschema.location}">
+      <produces dir="${dataschema.src.dir}" includes="**/*" />
+    </xjc>
+
+    <echo message="compiling dataschema generated sources" />
+    <javac srcdir="${dataschema.src.dir}" destdir="${dataschema.classes.dir}" source="1.5" target="1.5">
+      <classpath refid="build.deps.classpath"/>
+    </javac>
+
+    <copy toDir="${dataschema.classes.dir}">
+      <fileset dir="${dataschema.src.dir}">
+        <include name="**/jaxb.properties"/>
+        <include name="**/Configuration.xml"/>
+      </fileset>
+    </copy>
+
+    <mkdir dir="${lib.dir}"/>
+    <echo message="Creating dataschema jar"/>
+    <jar destfile="${dataschema.jar}">
+      <fileset dir="${dataschema.classes.dir}" includes="**/*"/>
+      <fileset dir="${dataschema.src.dir}" includes="**/*.java"/>
+      <!-- Note: The notice file is different for the jars than the distributable. -->
+      <fileset dir="${sdk.src.dir}" includes="NOTICE"/>
+      <fileset dir="." includes="LICENSE"/>
+    </jar>
+  </target>
+	
+  <target name="check-wsdl-jar">
+    <uptodate property="wsdl-uptodate" srcfile="${wsdl.location}" targetfile="${stub.jar}"/>
+  </target>
+
+  <target name="wsdl-jar"
+	  description="Creates the jar containing Axis generated stubs "
+	  depends="check-wsdl-jar"
+          unless="wsdl-uptodate">
+
+    <mkdir dir="${stub.src.dir}"/>
+    <mkdir dir="${stub.classes.dir}"/>
+
+    <echo message="Generating Axis stubs...." />
+    <java classname="org.apache.axis.wsdl.WSDL2Java" fork="true">
+      <arg line="-W '${wsdl.location}' --package ${package.service.name} --output '${stub.src.dir}'"/>
+      <classpath refid="build.deps.classpath"/>
+    </java>
+
+    <echo message="Compiling Axis generated stubs..." />
+    <javac srcdir="${stub.src.dir}" destdir="${stub.classes.dir}" source="1.5" target="1.5">
+      <classpath refid="build.deps.classpath"/>
+    </javac>
+
+    <mkdir dir="${lib.dir}"/>
+
+    <echo message="Creating axis jar " />
+    <jar destfile="${stub.jar}" >
+      <fileset dir="${stub.classes.dir}" includes="**/*.class"/>
+      <fileset dir="${stub.src.dir}" includes="**/*.java"/>
+      <!-- Note: The notice file is different for the jars than the distributable. -->
+      <fileset dir="${sdk.src.dir}" includes="NOTICE"/>
+      <fileset dir="." includes="LICENSE"/>
+    </jar>
+  </target>
+
+  <target name="compile-sdk" depends="wsdl-jar,dataschema-jar" description="Compiles SDK sources">
+    <mkdir dir="${sdk.classes.dir}"/>
+    <echo message="Compiling SDK source files..." />
+    <javac srcdir="${sdk.src.dir}" destdir="${sdk.classes.dir}" source="1.5" target="1.5" debug="on">
+      <classpath refid="build.classpath"/>
+    </javac>
+  </target>
+
+  <target name="jar" depends="compile-sdk" description="Creates SDK Jar" >
+
+    <echo message="Copying required resources..." />
+    <copy toDir="${sdk.classes.dir}/com/amazonaws/mturk/service/axis/">
+      <fileset dir="${etc.dir}">
+        <include name="previewHITHeader.xml"/>
+        <include name="previewHITFooter.xml"/>
+        <include name="mturk-client-config.wsdd"/>
+      </fileset>
+    </copy>
+
+    <copy toDir="${sdk.classes.dir}/com/amazonaws/mturk/addon">
+      <fileset dir="${etc.dir}/schema/2005-10-01">
+        <include name="QuestionForm.xsd"/>
+      </fileset>
+      <fileset dir="${etc.dir}/schema/2006-07-14">
+        <include name="FormattedContentXHTMLSubset.xsd"/>
+        <include name="ExternalQuestion.xsd"/>
+      </fileset>
+      <fileset dir="${etc.dir}/xform">
+        <include name="HIT.xsl"/>
+      </fileset>
+    </copy>
+
+    <echo message="Creating SDK jar..." />
+    <jar destfile="${sdk.jar}">
+      <fileset dir="${sdk.classes.dir}" includes="com/**" excludes="**/test/*.class"/>
+      <fileset dir="${sdk.src.dir}" includes="**/*.java"/>
+      <!-- Note: The notice file is different for the jars than the distributable. -->
+      <fileset dir="${sdk.src.dir}" includes="NOTICE"/>
+      <fileset dir="." includes="LICENSE"/>
+    </jar>
+
+  </target>
+
+  <target name="compile-test" depends="jar" description="Compile SDK Unit Tests">
+    <condition property="junit.available">
+      <available classname="junit.framework.TestCase" classpathref="build.test.classpath"/>
+    </condition>
+    <fail unless="junit.available">
+      JUnit not available.
+      
+      Tests can not be compiled without JUnit.
+      
+      You must download JUnit from http://www.junit.org/ and place the JUnit
+      jar under lib/third-party in order to compile and run tests.
+      
+    </fail>
+    <mkdir dir="${sdk.test.classes.dir}" />
+    <echo message="Compiling SDK Junit tests..." />
+    <javac srcdir="${sdk.test.dir}" destdir="${sdk.test.classes.dir}" source="1.5" target="1.5" debug="on">
+      <classpath refid="build.test.classpath"/>
+    </javac>
+  </target>
+
+  <target name="jar-test" depends="compile-test, copy-test-resources">
+    <jar destfile="${sdk.test.jar}">
+      <fileset dir="${sdk.test.classes.dir}" includes="**/*.class" />
+      <fileset dir="${sdk.test.dir}" includes="**/*.java" />
+      <!-- Note: The notice file is different for the jars than the distributable. -->
+      <fileset dir="${sdk.src.dir}" includes="NOTICE"/>
+      <fileset dir="." includes="LICENSE"/>
+    </jar>
+  </target>
+	
+	 <target name="copy-test-resources" description="Copies resources required by the tests">
+	    <mkdir dir="${sdk.test.classes.dir}/etc"/>
+	    <copy toDir="${sdk.test.classes.dir}/etc" >
+	      <fileset dir="${etc.dir}" >
+	        <include name="test/*.*" />
+	      </fileset>
+	    </copy>
+	  </target>
+
+
+
+  <target name="compile-eval" description="Compile application source files">
+    <echo message="Compiling the java source files..." />
+    <mkdir dir="${eval.classes.dir}"/>
+    <javac destdir="${eval.classes.dir}" debug="on">
+      <src path="${eval.src.dir}" />
+      <classpath refid="build.eval.classpath"/>
+    </javac>
+  </target>
+
+  <target name="helloWorld" depends="compile-eval" description="Run the hello world sample app">
+    <echo message="Running the Hello World sample application..." />
+    <java dir="${eval.src.dir}/edu/stanford/bmir/test/mturk" classname="edu.stanford.bmir.test.mturk.MTurkHelloWorld" fork="true">
+      <classpath refid="runtime.classpath"/>
+    </java>
+  </target>
+
+
+	  <target name="ontologyEval" depends="compile-eval" description="Run the ontology evaluation app">
+	    <echo message="Running the ontology evaluation application..." />
+	    <java dir="${eval.src.dir}/edu/stanford/bmir/test/mturk" classname="edu.stanford.bmir.test.mturk.OntologyEvaluationTask" fork="true">
+	      <classpath refid="runtime.classpath"/>
+	    </java>
+	  </target>
+
+	  <target name="cleanUp" depends="compile-eval" description="Run the clean up app">
+	    <echo message="Running the HIT clean up application..." />
+	    <java dir="${eval.src.dir}/edu/stanford/bmir/test/mturk" classname="edu.stanford.bmir.test.mturk.CleanUp" fork="true">
+	      <classpath refid="runtime.classpath"/>
+	    </java>
+	  </target>
+
+	  <target name="analyze" depends="compile-eval" description="Run the analysys app">
+	    <echo message="Running the HIT analysis..." />
+	    <java dir="${eval.src.dir}/edu/stanford/bmir/test/mturk" classname="edu.stanford.bmir.test.mturk.Analyzer" fork="true">
+	      <classpath refid="runtime.classpath"/>
+	    </java>
+	  </target>
+
+
+	  <target name="review" depends="compile-eval" description="Reviewer assignments">
+	    <echo message="Running review application..." />
+	    <java dir="${eval.src.dir}/edu/stanford/bmir/test/mturk" classname="edu.stanford.bmir.test.mturk.Reviewer" fork="true">
+	      <classpath refid="runtime.classpath"/>
+	    </java>
+	  </target>
+
+
+
+  <target name="doc" description="Generates Javadoc" >
+    <mkdir dir="${doc.dir}" />
+    <javadoc destdir="${doc.dir}" access="protected" classpathref="runtime.classpath">
+      <fileset dir="${sdk.src.dir}" includes="**/*.java" />
+      <fileset dir="${sample.src.dir}" includes="**/*.java" />
+    </javadoc>
+  </target>
+
+  <target name="createTempDist" depends="jar, doc" >
+
+    <delete dir="${temp.dir}"/>
+
+    <copy todir="${temp.dir}/${release.name}/etc">
+      <fileset dir= "etc" includes="*.*" />
+    </copy>
+    <copy file="ReadMe.html" todir="${temp.dir}/${release.name}"/>
+    <copy file="Overview.html" todir="${temp.dir}/${release.name}"/>
+    <copy file="LICENSE" todir="${temp.dir}/${release.name}"/>
+    <copy file="NOTICE" todir="${temp.dir}/${release.name}"/>
+    <copy file="build.xml" todir="${temp.dir}/${release.name}"/>
+    <copy file="build.properties" todir="${temp.dir}/${release.name}"/>
+
+    <!-- copy fileset to temp-->
+    <copy todir="${temp.dir}/${release.name}/${sdk.src.dir}">
+      <fileset dir="${sdk.src.dir}">
+        <include name="**/*.java"/>
+        <include name="NOTICE"/>
+      </fileset>
+    </copy>
+    <copy todir="${temp.dir}/${release.name}/${sdk.test.dir}">
+      <fileset dir="${sdk.test.dir}" includes="**/*.java"/>
+    </copy>
+    <copy todir="${temp.dir}/${release.name}/doc">
+      <fileset dir="${doc.dir}"/>
+    </copy>
+
+    <mkdir dir="${temp.dir}/${release.name}/lib"/>
+    <copy toDir="${temp.dir}/${release.name}/lib">
+      <fileset dir="${lib.dir}" />
+    </copy>
+
+    <copy todir="${temp.dir}/${release.name}/${sample.src.dir}">
+      <fileset dir="${sample.src.dir}" excludes="**/*.success,**/*.failure,**/*.log,**/preview.html"/>
+    </copy>
+    <copy todir="${temp.dir}/${release.name}/${etc.dir}">
+      <fileset dir="${etc.dir}">
+        <include name="schema/**/*"/>
+        <include name="wsdl/**/*"/>
+        <include name="xform/**/*"/>
+        <include name="test/**/*"/>
+      </fileset>
+    </copy>
+    <copy todir="${temp.dir}/${release.name}/${third-party.lib.dir}" >
+      <fileset dir="${third-party.lib.dir}">
+        <exclude name="junit*"/>
+        <exclude name="junit*/**"/>
+      </fileset>
+    </copy>
+  </target>
+
+  <target name="dist" depends="unix"/>
+
+  <target name="unix">
+    <antcall target="createTempDist"/>
+    <property name="tar.filename" value="${dist.dir}/temp.tar"/>
+    <!-- convert crlfs to unix-->
+    <fixcrlf srcdir="${temp.dir}" eol="unix" excludes="**/*.jar"/>
+
+    <tar destfile="${tar.filename}">
+      <tarfileset dir="${temp.dir}" mode="777"/>
+    </tar>
+    <gzip destfile="${dist.dir}/${release.name}.tar.gz" src="${tar.filename}"/>
+    <delete file="${tar.filename}"/>
+    <delete dir="${temp.dir}"/>
+  </target>
+
+  <target name="clean" description="Deletes all the generated artifacts.">
+    <delete dir="${output.dir}" />
+    <delete dir="${doc.dir}" />
+    <delete dir="${dist.dir}" />
+  </target>
+
+  <target name="help" description="Show ant targets">
+    <echo message="Run 'ant helloworld' to run the MTurkHelloWorld application." />
+    <echo message="Run 'ant ontologyEval' to run the MTurk Ontology Evaluation application." />
+    <echo message="Run 'ant cleanUp' to run the MTurk clean up application." />
+    <echo message="Run 'ant analyze' to run the MTurk analysis application." />
+    <echo message="Run 'ant review' to run the MTurk review application." />
+  </target>
+
+</project>
+

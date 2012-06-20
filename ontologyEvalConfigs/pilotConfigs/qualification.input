@@ -1,0 +1,13 @@
+id	ontology	value	child	parent	score
+qual1	SUMO	true	Search	Process	1
+qual2	SUMO	true	Direction Change	Motion	1
+qual3	SUMO	true	Substance	Object	1
+qual4	SUMO	false	Social Interaction	Self Connected Object	1
+qual5	SUMO	false	Creation	Object	1
+qual6	SUMO	false	Comparison	Intentional Process	1
+qual7	BWW	true	Function Value	Attribute	1
+qual8	BWW	true	Input	Action	1
+qual9	BWW	true	Natural Genus	Kind	1
+qual10	BWW	false	Environment	History	1
+qual11	BWW	false	Value	Level	1
+qual12	BWW	false	Reference Frame	Domain	1

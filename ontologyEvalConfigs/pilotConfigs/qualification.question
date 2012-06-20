@@ -1,0 +1,25 @@
+  <Question>
+    <QuestionIdentifier>$id</QuestionIdentifier>
+    <QuestionContent>
+      <FormattedContent><![CDATA[
+      	<h2>Every $child is a $parent</h2>
+     ]]></FormattedContent>     	
+    </QuestionContent>
+    <AnswerSpecification>
+      <SelectionAnswer>
+        <MinSelectionCount>1</MinSelectionCount>
+        <MaxSelectionCount>1</MaxSelectionCount>
+        <StyleSuggestion>radiobutton</StyleSuggestion>
+        <Selections>
+          <Selection>
+            <SelectionIdentifier>true</SelectionIdentifier>
+            <Text>True</Text>
+          </Selection>
+          <Selection>
+            <SelectionIdentifier>false</SelectionIdentifier>
+            <Text>False</Text>
+          </Selection>
+        </Selections>
+      </SelectionAnswer>
+    </AnswerSpecification>
+  </Question>

@@ -1,0 +1,7 @@
+  <Question>
+    <QuestionIdentifier>$id</QuestionIdentifier>
+    <AnswerOption>
+      <SelectionIdentifier>$value</SelectionIdentifier>
+      <AnswerScore>$score</AnswerScore>
+    </AnswerOption>
+  </Question>
